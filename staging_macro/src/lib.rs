@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
-use staging_core::derive_checker;
+use staging_core::derive_staging;
 
 #[proc_macro_derive(Staging, attributes(staging))]
 pub fn derive(input: TokenStream) -> TokenStream {
-    derive_checker(input.into()).into()
+    derive_staging(input.into()).into()
 }

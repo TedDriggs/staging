@@ -67,7 +67,7 @@ impl FromIterator<Error> for Error {
 }
 
 #[derive(Debug, Staging)]
-#[staging(error = Error, additional_errors)]
+#[staging(error = Error, additional_errors, derive(Debug))]
 struct Args {
     name: String,
     age: u32,
@@ -128,6 +128,9 @@ impl FromStr for ArgsStaging {
     }
 }
 
+/// Parse a comma-separated string that starts with the name and age.
+/// This returns an error if parsing is impossible, or will return all semantic errors
+/// if any are found.
 impl FromStr for Args {
     type Err = Error;
 

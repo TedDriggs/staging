@@ -1,18 +1,22 @@
 use std::borrow::Cow;
 
-use darling::{FromDeriveInput, FromField, ast::Data, util::Flag};
+use darling::{
+    FromDeriveInput, FromField,
+    ast::Data,
+    util::{Flag, PathList},
+};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, TokenStreamExt, quote};
 use syn::{Ident, Path, parse_quote, parse_quote_spanned, spanned::Spanned};
 
-pub fn derive_checker(input: TokenStream) -> TokenStream {
-    match try_derive_checker(input) {
+pub fn derive_staging(input: TokenStream) -> TokenStream {
+    match try_derive_staging(input) {
         Ok(tokens) => tokens,
         Err(err) => err.write_errors(),
     }
 }
 
-fn try_derive_checker(input: TokenStream) -> darling::Result<TokenStream> {
+fn try_derive_staging(input: TokenStream) -> darling::Result<TokenStream> {
     let receiver = Receiver::from_derive_input(&syn::parse2(input)?)?;
     let mut tokens = TokenStream::new();
     receiver.to_tokens(&mut tokens);
@@ -27,11 +31,15 @@ struct Field {
 }
 
 #[derive(Debug, Clone, FromDeriveInput)]
-#[darling(attributes(staging))]
+#[darling(attributes(staging), forward_attrs(doc, cfg), supports(struct_named))]
 struct Receiver {
     ident: syn::Ident,
     vis: syn::Visibility,
+    generics: syn::Generics,
+    attrs: Vec<syn::Attribute>,
     data: Data<(), Field>,
+    /// Traits that the generated struct should derive
+    derive: Option<PathList>,
     /// Name for the generated checker type
     name: Option<Ident>,
     /// Path to the error type
@@ -78,12 +86,26 @@ impl Receiver {
 impl ToTokens for Receiver {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            ident, data, vis, ..
+            ident,
+            data,
+            vis,
+            attrs,
+            generics,
+            derive,
+            ..
         } = self;
 
         let root = self.crate_root();
         let checker_name = self.checker_name();
         let final_error = self.final_error();
+
+        let derive = derive.as_ref().map(|pl| {
+            quote! {
+                #[derive(#(#pl),*)]
+            }
+        });
+
+        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
         let fields = data
             .as_ref()
@@ -113,12 +135,14 @@ impl ToTokens for Receiver {
         };
 
         tokens.append_all(quote! {
-            #vis struct #checker_name {
+            #derive
+            #(#attrs)*
+            #vis struct #checker_name #ty_generics #where_clause {
                 #(#field_decls,)*
                 #errors_decl
             }
 
-            impl #root::export::TryFrom<#checker_name> for #ident {
+            impl #impl_generics #root::export::TryFrom<#checker_name> for #ident #ty_generics #where_clause {
                 type Error = #final_error;
 
                 fn try_from(checker: #checker_name) -> #root::export::Result<Self, Self::Error> {
