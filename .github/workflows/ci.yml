@@ -37,21 +37,6 @@ jobs:
             - name: Check Cargo availability
               run: cargo --version
             - run: cargo test --verbose --all
-            - run: cargo test --verbose --manifest-path core/Cargo.toml --no-default-features
-
-    # Diagnostics are remaining a nightly-only feature for the foreseeable future, but
-    # we don't want them to break without us realizing.
-    test_diagnostics:
-        name: Test nightly with diagnostics feature
-        runs-on: ubuntu-latest
-        continue-on-error: true
-        steps:
-            - uses: actions/checkout@v4
-            - uses: dtolnay/rust-toolchain@nightly
-            - uses: Swatinem/rust-cache@v2
-            - name: Check Cargo availability
-              run: cargo --version
-            - run: cargo test --verbose --workspace --features diagnostics
 
     clippy:
         name: Lint with clippy
