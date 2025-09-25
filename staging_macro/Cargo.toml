@@ -5,6 +5,8 @@ edition = "2024"
 authors = ["Ted Driggs <tdriggs@outlook.com>"]
 license = "MIT"
 rust-version = "1.89.0"
+description = "Procedural macro for better validation"
+repository = "https://github.com/TedDriggs/staging"
 
 [dependencies]
 staging_core = { path = "../staging_core", version = "=0.1.0" }
