@@ -1,0 +1,3 @@
+[workspace]
+members = ["staging", "staging_core", "staging_macro"]
+resolver = "3"

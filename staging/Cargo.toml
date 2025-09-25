@@ -1,0 +1,8 @@
+[package]
+name = "staging"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+staging_core = { path = "../staging_core", version = "=0.1.0" }
+staging_macro = { path = "../staging_macro", version = "=0.1.0" }
