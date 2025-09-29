@@ -94,6 +94,37 @@ impl Receiver {
             None
         }
     }
+
+    fn inherent_methods(&self) -> Vec<syn::ImplItemFn> {
+        let root = self.crate_root();
+        let mut methods = Vec::new();
+
+        if self.additional_errors.is_present() {
+            let error = &self.error;
+            let ident = self
+                .additional_errors_ident()
+                .expect("additional_errors_ident should exist");
+
+            let method: syn::ImplItemFn = parse_quote! {
+                /// Handle a result, pushing any errors into the `additional_errors` list.
+                pub fn handle<Val>(
+                    &mut self,
+                    result: #root::export::Result<Val, impl #root::export::Into<#error>>
+                ) -> #root::export::Option<Val> {
+                    match result {
+                        #root::export::Ok(value) => #root::export::Some(value),
+                        #root::export::Err(err) => {
+                            self.#ident.push(err.into());
+                            #root::export::None
+                        }
+                    }
+                }
+            };
+            methods.push(method);
+        }
+
+        methods
+    }
 }
 
 impl ToTokens for Receiver {
@@ -134,6 +165,18 @@ impl ToTokens for Receiver {
         let take_errors = fields.iter().map(ReceiverField::take_error);
         let initializers = fields.iter().map(ReceiverField::initializer);
 
+        let methods = self.inherent_methods();
+
+        let inherent_impl = if methods.is_empty() {
+            None
+        } else {
+            Some(quote! {
+                impl #impl_generics #checker_name #ty_generics #where_clause {
+                    #(#methods)*
+                }
+            })
+        };
+
         let errors_decl: Option<syn::Field> = self.additional_errors_ident().map(|ident| {
             let error = &self.error;
             parse_quote! {
@@ -154,6 +197,8 @@ impl ToTokens for Receiver {
                 #(#field_decls,)*
                 #errors_decl
             }
+
+            #inherent_impl
 
             impl #impl_generics #root::export::TryFrom<#checker_name> for #ident #ty_generics #where_clause {
                 type Error = #final_error;
@@ -231,7 +276,8 @@ impl<'a> ReceiverField<'a> {
 }
 
 pub mod export {
-    pub use std::convert::TryFrom;
+    pub use std::convert::{Into, TryFrom};
+    pub use std::option::Option::{self, None, Some};
     pub use std::result::Result::{self, Err, Ok};
     pub use std::vec::Vec;
 }
