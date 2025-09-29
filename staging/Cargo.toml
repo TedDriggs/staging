@@ -1,6 +1,6 @@
 [package]
 name = "staging"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Ted Driggs <tdriggs@outlook.com>"]
 license = "MIT"
@@ -8,5 +8,5 @@ description = "Procedural macro for better validation"
 repository = "https://github.com/TedDriggs/staging"
 
 [dependencies]
-staging_core = { path = "../staging_core", version = "=0.1.0" }
-staging_macro = { path = "../staging_macro", version = "=0.1.0" }
+staging_core = { path = "../staging_core", version = "=0.2.0" }
+staging_macro = { path = "../staging_macro", version = "=0.2.0" }
