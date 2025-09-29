@@ -10,14 +10,27 @@ use quote::{ToTokens, TokenStreamExt, quote};
 use syn::{Ident, Path, parse_quote, parse_quote_spanned, spanned::Spanned};
 
 pub fn derive_staging(input: TokenStream) -> TokenStream {
-    match try_derive_staging(input) {
+    match try_derive_staging(input, None) {
         Ok(tokens) => tokens,
         Err(err) => err.write_errors(),
     }
 }
 
-fn try_derive_staging(input: TokenStream) -> darling::Result<TokenStream> {
-    let receiver = Receiver::from_derive_input(&syn::parse2(input)?)?;
+pub fn derive_staging_with_crate_root(input: TokenStream, crate_root: Option<Path>) -> TokenStream {
+    match try_derive_staging(input, crate_root) {
+        Ok(tokens) => tokens,
+        Err(err) => err.write_errors(),
+    }
+}
+
+fn try_derive_staging(
+    input: TokenStream,
+    crate_root: Option<Path>,
+) -> darling::Result<TokenStream> {
+    let mut receiver = Receiver::from_derive_input(&syn::parse2(input)?)?;
+    if receiver.crate_root.is_none() {
+        receiver.crate_root = crate_root;
+    }
     let mut tokens = TokenStream::new();
     receiver.to_tokens(&mut tokens);
     Ok(tokens)
